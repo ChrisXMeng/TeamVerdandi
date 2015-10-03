@@ -1,0 +1,10 @@
+{
+	"height": 10,
+	"width" : 15,
+	"player1X": 0,
+	"player1Y": 10,
+	"player2X": 15,
+	"player2Y": 0,
+	"initialHP": 2,
+	"maxTurns": 100
+}
