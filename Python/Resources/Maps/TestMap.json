@@ -4,7 +4,7 @@
 	"player1X": 0,
 	"player1Y": 0,
 	"player2X": 14,
-	"player2Y": 9,
+	"player2Y": 0,
 	"initialHP": 2,
 	"maxTurns": 100,
 	"turrets": [],
