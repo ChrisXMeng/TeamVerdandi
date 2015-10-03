@@ -6,5 +6,11 @@
 	"player2X": 15,
 	"player2Y": 0,
 	"initialHP": 2,
-	"maxTurns": 100
+	"maxTurns": 100,
+	"turrets": [],
+	"shield": [],
+	"teleport": [],
+	"teleportPad": [],
+	"laser": [],
+	"walls": []
 }
