@@ -1,10 +1,10 @@
 {
+	"width": 15,
 	"height": 10,
-	"width" : 15,
 	"player1X": 0,
-	"player1Y": 10,
-	"player2X": 15,
-	"player2Y": 0,
+	"player1Y": 0,
+	"player2X": 14,
+	"player2Y": 9,
 	"initialHP": 2,
 	"maxTurns": 100,
 	"turrets": [],
@@ -13,4 +13,4 @@
 	"teleportPad": [],
 	"laser": [],
 	"walls": []
-}
+	}
