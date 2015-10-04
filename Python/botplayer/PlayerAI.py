@@ -21,73 +21,114 @@ class PlayerAI:
 							1:Move.FACE_DOWN,
 							2:Move.FACE_LEFT,
 							3:Move.FACE_RIGHT,
-							10:Move.FORWARD}
+							4:Move.FORWARD,
+							5:Move.FORWARD,
+							6:Move.FORWARD,
+							7:Move.FORWARD,
+							8:Move.SHOOT,
+							9:Move.SHOOT,
+							10:Move.SHOOT,
+							11:Move.SHOOT}
 		self.checkOffsets = [(0,2), (0,1), (0,-1), (0,-2),
 						(-2,0),(-1,0),(1,0), (2, 0)]
 		self.init = False
 		self.turret_cells = []
+		self.lastTurn = -1
 		pass
 
 	def get_move(self, gameboard, player, opponent):
 		if self.init == False:
 			self.init1(gameboard, player)
-		else:
-			pass
 
-		block1 = True
-		myDir = self.intDir[player.direction]
 		result = self.colDet(gameboard, player)
-		if result != -1:
+		if result != -1 and result != Move.NONE:
 			return result
-		#print (myDir)
 
-		#if player.x != 3:
-			#return Move.FORWARD
-		#if len(gameboard.bullets) > 0:
-		#	print(gameboard.bullets[0].direction)
-		#	print(gameboard.bullets[0].shooter)
-		#	print(gameboard.bullets[0].x, gameboard.bullets[0].y)
-		return Move.NONE
+		x = player.x
+		y = player.y
+
+		if {x, y} in self.turret_cells:
+			return Move.FORWARD
+
+		while 1:
+			intMove = randint(0,11)
+			move = self.intComDir[intMove]
+			if move == Move.FORWARD:
+				if player.direction == Direction.UP:
+					temp = self.calcPos(x, y-1)
+				elif player.direction == Direction.DOWN:
+					temp = self.calcPos(x, y+1)
+				elif player.direction == Direction.LEFT:
+					temp = self.calcPos(x-1, y)
+				else:
+					temp = self.calcPos(x+1, y)
+				temp2 = {temp[0], temp[1]}
+				if self.bulletsAround(gameboard, player.direction, temp[0], temp[1]):
+					continue
+				elif temp2 in self.turret_cells:
+					continue
+				elif gameboard.is_wall_at_tile(temp[0], temp[1]):
+					continue
+				else:
+					self.lastTurn = intMove
+					return move 	#break
+			elif intMove < 4:
+				if self.lastTurn < 4:
+					continue
+				else:
+					self.lastTurn = intMove
+					break
+			else:
+				self.lastTurn = intMove
+				break
+
+		#print ("rand", move)
+		return move
 
 	def load_turrets(self, gameboard):
 		for turret in gameboard.turrets:
-			self.turret_cells.push({turret.x, turret.y})
+			self.turret_cells.append({turret.x, turret.y})
 			for x in range (1, 5):
 				if turret.x + x > gameboard.width - 1:
 					target_cell = 0 + x
 				else:
 					target_cell = turret.x + x
-				if gameboard.is_wall_at_tile(target_cell + x, turret.y):
+				temp = self.calcPos(target_cell, turret.y)
+				if gameboard.is_wall_at_tile(temp[0],temp[1]):
 					break
 				else:
-					self.turret_cells.push({target_cell, turret.y})
+					self.turret_cells.append({target_cell, turret.y})
 			for x in range (1, 5):
 				if turret.x - x < 0:
 					target_cell = gameboard.width - x - 1
 				else:
-					target_cell = turret.x - x
-				if gameboard.is_wall_at_tile(target_cell, turret.y):
+					target_cell = turret.x - x				
+				temp = self.calcPos(target_cell, turret.y)
+				if gameboard.is_wall_at_tile(temp[0],temp[1]):
 					break
 				else:
-					self.turret_cells.push({target_cell, turret.y})
+					self.turret_cells.append({target_cell, turret.y})
 			for x in range (1, 5):
 				if turret.y + x > gameboard.height - 1:
 					target_cell = 0 + x
 				else:
 					target_cell = turret.y + x
-				if gameboard.is_wall_at_tile(turret.x, target_cell):
+
+				temp = self.calcPos(turret.x, target_cell)
+				if gameboard.is_wall_at_tile(temp[0],temp[1]):
 					break
 				else:
-					self.turret_cells.push({turret.x, target_cell})
+					self.turret_cells.append({turret.x, target_cell})
 			for x in range (1, 5):
 				if turret.y - x < 0:
 					target_cell = gameboard.height - x -1
 				else:
 					target_cell = turret.y - x
-				if gameboard.is_wall_at_tile(turret.x, target_cell):
+				temp = self.calcPos(turret.x, target_cell)
+				if gameboard.is_wall_at_tile(temp[0],temp[1]):
 					break
 				else:
-					self.turret_cells.push({turret.x, target_cell})
+					self.turret_cells.append({turret.x, target_cell})
 
 	def opponentDirX(self, player, opponent):
 		if player.x == opponent.x:
@@ -103,6 +144,7 @@ class PlayerAI:
 		self.maxY = gameboard.height
 		self.init = True
 		self.stuck = False
+		self.load_turrets(gameboard)
 
 
 	def calcPos(self, x, y):
@@ -178,14 +220,19 @@ class PlayerAI:
 						if player.direction == destDir[0] or player.direction == destDir[1]:				#if the player is facing left/right
 							right = not self.bulletsAround(gameboard, destDir[1], destTile[i][0], destTile[i][1])
 							left = not self.bulletsAround(gameboard, destDir[0], x-1, y)
-							print(left, right)
+							#print(left, right)
 							if not right and not left:
-								#if b.direction == Direction.DOWN:
-									#return Move.FACE_DOWN
-								#return Move.FACE_UP
 								if randint(0,1) == 0:
+									temp = self.calcPos(x-1, y)
+									temp2 = {temp[0], temp[1]}
+									if temp2 in self.turret_cells:
+										return Move.FACE_RIGHT
 									return Move.FACE_LEFT
 								else:
+									temp = self.calcPos(x+1, y)
+									temp2 = {temp[0], temp[1]}
+									if temp2 in self.turret_cells:
+										return Move.FACE_LEFT
 									return Move.FACE_RIGHT
 							elif not right and player.direction == Direction.RIGHT: 
 								return Move.FACE_LEFT
@@ -197,8 +244,6 @@ class PlayerAI:
 								return Move.FACE_LEFT
 							if self.bulletsAround(gameboard, Direction.RIGHT, destTile[i][0], destTile[i][1]):
 								return Move.FACE_LEFT
-							print("LEFT", self.bulletsAround(gameboard, Direction.LEFT, 
-								destTile[i][0], destTile[i][1]))
 							return Move.FACE_RIGHT						#if not, then roate left/right
 
 		tempPos = [(x+2, y), (x-2, y)]
@@ -215,14 +260,19 @@ class PlayerAI:
 						if player.direction == destDir[0] or player.direction == destDir[1]:				#if the player is facing left/right
 							up = not self.bulletsAround(gameboard, destDir[1], destTile[i][0], destTile[i][1])
 							down = not self.bulletsAround(gameboard, destDir[0], x, y+1)
-							print(up, down)
+							#print(up, down)
 							if not up and not down:
-								# if b.direction == Direction.RIGHT:
-								# 	return Move.FACE_RIGHT
-								# return Move.FACE_LEFT
 								if randint(0,1) == 0:
+									temp = self.calcPos(x, y-1)
+									temp2 = {temp[0], temp[1]}
+									if temp2 in self.turret_cells:
+										return Move.FACE_DOWN
 									return Move.FACE_UP
 								else:
+									temp = self.calcPos(x, y+1)
+									temp2 = {temp[0], temp[1]}
+									if temp2 in self.turret_cells:
+										return Move.FACE_UP
 									return Move.FACE_DOWN
 							elif not up and player.direction == Direction.UP: 
 								return Move.FACE_DOWN
@@ -235,62 +285,7 @@ class PlayerAI:
 							if self.bulletsAround(gameboard, Direction.UP, destTile[i][0], destTile[i][1]):
 								return Move.FACE_DOWN
 							return Move.FACE_UP						#if not, then roate left/right
-		
-
-		# pos = self.calcPos(x, y+2)
-		# if gameboard.are_bullets_at_tile(pos[0], pos[1]):				#see if theres a bullet at that point
-		# 	for b in gameboard.bullets_at_tile[pos[0]][pos[1]]:		#goes through all the bullets on that tile
-		# 		if b.direction == Direction.UP:						#if the bullet is coming towards me
-		# 			if self.intDir[player.direction] > 1:				#if the player is facing left/right
-		# 				if gameboard.wall_at_tile[x+1][y]:
-		# 					return Move.FACE_RIGHT
-		# 				elif self.bulletsAround(gameboard, Direction.LEFT, x+1, y):
-		# 					return Move.FACE_RIGHT
-		# 				return Move.FORWARD								#if so, then move forward
-		# 			else:
-		# 				if gameboard.wall_at_tile[x+1][y]:
-		# 					return Move.FACE_RIGHT
-		# 				elif self.bulletsAround(gameboard, Direction.LEFT, x+1, y):
-		# 					return Move.FACE_RIGHT
-		# 				print("LEFT", self.bulletsAround(gameboard, Direction.LEFT, x+1, y))
-		# 				return Move.FACE_LEFT						#if not, then roate left/right
-		# pos = self.calcPos(x, y-2)
-		# if gameboard.are_bullets_at_tile(pos[0], pos[1]):				
-		# 	for b in gameboard.bullets_at_tile[pos[0]][pos[1]]:	
-		# 		if b.direction == Direction.DOWN:						
-		# 			if self.intDir[player.direction] > 1:				
-		# 				return Move.FORWARD						
-		# 			else:
-		# 				if gameboard.wall_at_tile[x+1][y]:
-		# 					return Move.FACE_RIGHT
-		# 				elif self.bulletsAround(gameboard, Direction.LEFT, x+1, y):
-		# 					return Move.FACE_RIGHT
-		# 				return Move.FACE_LEFT						
-		# pos = self.calcPos(x+2, y)
-		# if gameboard.are_bullets_at_tile(pos[0], pos[1]):				
-		# 	for b in gameboard.bullets_at_tile[pos[0]][pos[1]]:	
-		# 		if b.direction == Direction.LEFT:
-		# 			if self.intDir[player.direction] < 2:
-		# 				return Move.FORWARD
-		# 			else:						
-		# 				if gameboard.wall_at_tile[x][y-1]:
-		# 					return Move.FACE_DOWN
-		# 				elif self.bulletsAround(gameboard, Direction.UP, x, y-1):
-		# 					return Move.FACE_DOWN
-		# 				return Move.FACE_UP
-		# pos = self.calcPos(x-2, y)
-		# if gameboard.are_bullets_at_tile(pos[0], pos[1]):				
-		# 	for b in gameboard.bullets_at_tile[pos[0]][pos[1]]:	
-		# 		if b.direction == Direction.RIGHT:
-		# 			if self.intDir[player.direction] < 2:				
-		# 				return Move.FORWARD
-		# 			else:
-		# 				if gameboard.wall_at_tile[x][y-1]:
-		# 					return Move.FACE_DOWN
-		# 				elif self.bulletsAround(gameboard, Direction.UP, x, y-1):
-		# 					return Move.FACE_DOWN
-		# 				return Move.FACE_UP		
-
+	
 		return Move.NONE
 
 	def bulletsAround(self, gameboard, direction, x, y):
@@ -313,53 +308,3 @@ class PlayerAI:
 					if b.direction == tempDir[i]:
 						return True
 		return False
-			
-
-
-	# def colDet1(self, gameboard, player, x, y):
-
-	# 	pos = self.calcPos(x, y+2)
-	# 	if gameboard.areBulletsAtTile(pos[0], pos[1]):				#see if theres a bullet at that point
-	# 		for b in gameboard.getBulletsAtTile(pos[0], pos[1]):	#goes through all the bullets on that tile
-	# 			if b.direction == Direction.UP:						#if the bullet is coming towards me
-	# 				if intDir[player.direction] > 1:				#if the player is facing left/right
-	# 					return Move.FORWARD								#if so, then move forward
-	# 				else:
-	# 					return Move.FACE_LEFT						#if not, then roate left/right
-
-	# 	pos = self.calcPos(x, y+1)
-	# 	if gameboard.areBulletsAtTile(pos[0], pos[1]):
-	# 		for b in gameboard.getBulletsAtTile(pos[0], pos[1]):
-	# 			if b.direction == Direction.UP:
-	# 				if intDir[player.direction] > 1:
-	# 					return Move.FORWARD
-
-
-	# 	for couple in self.checkOffsets:
-	# 		if gameboard.areBulletsAtTile(x+couple[0], y+couple[1]):
-	# 			pass
-
-
-	# def oldColDet(self):
-
-
-	# 	for b in gameboard.bullets:
-	# 		if b.x == player.x:
-
-	# 			if block1 and abs(b.y-player.y) == 1:
-	# 				if self.intDir[player.direction] > 1:
-	# 					return Move.FORWARD
-	# 				#else:
-	# 					#your ded
-
-	# 			if abs(b.y-player.y) == 2:
-	# 				direct = self.opponentDirX(player, opponent)
-	# 				if direct == -1:
-	# 					return Move.FORWARD
-	# 				else:
-	# 					return self.intComDir[direct]
-	# 				#if self.intDir[player.direction] > 1:
-	# 				#	return self.comDir[player.direction]
-	# 			#if abs(b.y - player.y) == 2:
-	# 				#if b.direction == 
-
