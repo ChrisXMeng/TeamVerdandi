@@ -25,6 +25,7 @@ class PlayerAI:
 		self.checkOffsets = [(0,2), (0,1), (0,-1), (0,-2),
 						(-2,0),(-1,0),(1,0), (2, 0)]
 		self.init = False
+		self.turret_cells = []
 		pass
 
 	def get_move(self, gameboard, player, opponent):
@@ -47,6 +48,46 @@ class PlayerAI:
 		#	print(gameboard.bullets[0].shooter)
 		#	print(gameboard.bullets[0].x, gameboard.bullets[0].y)
 		return Move.NONE
+
+	def load_turrets(self, gameboard):
+		for turret in gameboard.turrets:
+			self.turret_cells.push({turret.x, turret.y})
+			for x in range (1, 5):
+				if turret.x + x > gameboard.width - 1:
+					target_cell = 0 + x
+				else:
+					target_cell = turret.x + x
+				if gameboard.is_wall_at_tile(target_cell + x, turret.y):
+					break
+				else:
+					self.turret_cells.push({target_cell, turret.y})
+			for x in range (1, 5):
+				if turret.x - x < 0:
+					target_cell = gameboard.width - x - 1
+				else:
+					target_cell = turret.x - x
+				if gameboard.is_wall_at_tile(target_cell, turret.y):
+					break
+				else:
+					self.turret_cells.push({target_cell, turret.y})
+			for x in range (1, 5):
+				if turret.y + x > gameboard.height - 1:
+					target_cell = 0 + x
+				else:
+					target_cell = turret.y + x
+				if gameboard.is_wall_at_tile(turret.x, target_cell):
+					break
+				else:
+					self.turret_cells.push({turret.x, target_cell})
+			for x in range (1, 5):
+				if turret.y - x < 0:
+					target_cell = gameboard.height - x -1
+				else:
+					target_cell = turret.y - x
+				if gameboard.is_wall_at_tile(turret.x, target_cell):
+					break
+				else:
+					self.turret_cells.push({turret.x, target_cell})
 
 	def opponentDirX(self, player, opponent):
 		if player.x == opponent.x:
